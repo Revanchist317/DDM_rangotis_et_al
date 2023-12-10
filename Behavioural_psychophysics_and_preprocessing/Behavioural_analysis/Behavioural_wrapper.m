@@ -2,10 +2,11 @@
 % written by Revan Rangotis, March 2022 
 
 IDs_in_directory = ["002" "003" "004" "005" "006" "007" "008" "009" "011" "012" "013" "014" "015" "016" "017" "018" "019" "020" "021" "023"];
-Save_figures = 1; % Change this to save the figures into a folder
+Save_figures = 0; % Change this to save the figures into a folder
 Save_files = 1; % Change this to save the final data file into a folder
 Show_figures = 'off'; % For performance keep to 'off'
 analyse_ind_blocks = 1;
+GLM_pre_processing = 1; % This flag simply removes the first trial of each block
 
 psychometric_description = cell(20, 4);
 ijk = 1;
@@ -20,7 +21,7 @@ for i = 1:length(IDs_in_directory)
     for k = 1:4 
         paradigm = paradigms_list(k); % Choose the appropriate paradigm 
         paradigm_name = paradigm_names_list(k); 
-        path = ("/Users/revanhome/Desktop/HDDM_test_MATLAB/Behavioural_psychophysics_and_preprocessing/Behavioural_data/responses_" + paradigm);
+        path = ("/Users/revanhome/Desktop/Magdeburg/DDM/Behavioural_psychophysics_and_preprocessing/Behavioural_data/responses_" + paradigm);
         cd(path) % Change the current directory to access the relevant data
         files_in_directory = dir("DDM_" + subject_id + "*");
         
@@ -68,7 +69,8 @@ for i = 1:length(IDs_in_directory)
                 b{iokl, 1}(b{iokl, 1}.StimulusOnset == 999000, :) = []; 
                 b{iokl, 1}(b{iokl, 1}.ResponseTime == 999000, :) = [];
                 b{iokl, 1}(b{iokl, 1}.ToneOnset == 999000, :) = []; 
-                
+                b{iokl, 1}.Previous_response = ones(height(b{iokl, 1}), 1)*2; 
+
                 if iokl == 1 
                     combined_blocks_outl = b{iokl, 1}; 
                 else
@@ -76,7 +78,16 @@ for i = 1:length(IDs_in_directory)
                 end
             end
             
+            % Combine the experimental blocks together into one table
+            % claled 'combined_blocks' 
+            
             if b{m, 2} == "Experimental"
+
+                if GLM_pre_processing
+                    b{m, 1}.Previous_response = ones(height(b{m, 1}), 1)*2; 
+                    b{m, 1}.Previous_response(2:end) = b{m, 1}.Response(1:end-1);
+                    b{m, 1}(1, :) = [];
+                end 
                 
                 if m == 1
                     combined_blocks = b{m, 1}; 
@@ -117,7 +128,6 @@ for i = 1:length(IDs_in_directory)
                 block_name = strrep(block_name, '_', " ");
                 nexttile 
                 block_cur = table2array(block_cur); 
-
             end
 
             figure('visible', Show_figures);
@@ -157,8 +167,9 @@ for i = 1:length(IDs_in_directory)
         
         % Analyse and plot RT + psychometric curves 
         C_final_figure_RT = figure('visible', Show_figures);
+        Mean_RT_session(combined_blocks_analysis, combined_name, paradigm); 
         
-        C_final_figure_psycho = figure('visible', Show_figures);  
+        C_final_figure_psycho = figure('visible', Show_figures);
         ijk = ijk + 1;
         
         % Saving the figures 
@@ -191,8 +202,8 @@ for i = 1:length(IDs_in_directory)
         if Save_files
             ID_list = zeros(height(combined_blocks), 1); 
             ID_list(:) = subject_id;
-            file_for_save = table(ID_list, combined_blocks.Stimulus, combined_blocks.RT, combined_blocks.Response, combined_blocks.Accuracy, combined_blocks.stimulus_displayed, combined_blocks.resp_mode);
-            file_for_save.Properties.VariableNames = ["subj_idx" "stim" "rt" "response" "accuracy" "stimulus_displayed" "response_mode"];
+            file_for_save = table(ID_list, combined_blocks.Stimulus, combined_blocks.RT, combined_blocks.Response, combined_blocks.Accuracy, combined_blocks.stimulus_displayed, combined_blocks.resp_mode, combined_blocks.Previous_response);
+            file_for_save.Properties.VariableNames = ["subj_idx" "stim" "rt" "response" "accuracy" "stimulus_displayed" "response_mode" "previous response"];
 
             if k == 1
                 final_file = file_for_save;
@@ -208,9 +219,13 @@ for i = 1:length(IDs_in_directory)
     
     if Save_files   
 
-        % Change this to your local directory 
-        cd('/Users/revanhome/Desktop/HDDM_test_MATLAB/Behavioural_psychophysics_and_preprocessing/Behavioural_data')
-        writetable(final_file, subject_id + "raw" + '.csv')
+        if GLM_pre_processing
+            cd('/Users/revanhome/Desktop/Magdeburg/DDM/Behavioural_psychophysics_and_preprocessing/Behavioural_data')
+            writetable(final_file, subject_id + "raw_GLM" + '.csv')
+        else
+            % Change this to your local directory 
+            cd('/Users/revanhome/Desktop/Magdeburg/DDM/Behavioural_psychophysics_and_preprocessing/Behavioural_data')
+            writetable(final_file, subject_id + "raw" + '.csv')
+        end 
     end
 end
-
