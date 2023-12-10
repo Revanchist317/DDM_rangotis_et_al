@@ -1,4 +1,4 @@
-function [mu, sd] = psychometric_fit_cum_norm_v2(probit, paradigm)
+function [mu, sd] = psychometric_fit_cum_norm_v2(probit, paradigm, counter)
 
     % Revan Rangotis, 2022
     % This function fits a psychometric curve using the cumulative Gaussian to
@@ -20,42 +20,15 @@ function [mu, sd] = psychometric_fit_cum_norm_v2(probit, paradigm)
     p = [probit.resps]./[probit.n];
 
     % If there are fewer than three points on the PSF, cannot fit the cdf.
-    % Exit the function with exit flag = 0.
     if length(p) < 2
         warning("Not enough points for fitting!") 
         return
     end
 
-    % Make an initial guess at the parameters to fit. x(1) is the mean, x(2) is
-    % the SD.
+    Results.fit = fitCumulativeGaussian(probit.resps, probit.n, probit.x);
 
-    % mean:
-    w = exp(-(p - 0.5).^2 ./0.1);
-        for k = 1:3
-            x(1) = sum(w .* [probit.x] .* [probit.n])/sum(w .*[probit.n]);
-
-            % SD:
-            nsd = erfinv((p * 2) -1);
-            idx = nsd > 2;
-            nsd(idx) = 2;
-            idx = nsd < -2;
-            nsd(idx) = -2;
-            nsd(nsd == 0) = mean(nsd)/10;
-
-        end
-
-    results.preg = polyfit([probit.x],nsd,1); % Fit a straight line to nsd as function of probit.x
-    x(2) = 1/results.preg(1); 
-    a = loglike(x, probit);
-    b = loglike([x(1) -x(2)], probit);
-
-    if(b < a)
-        x(2) = -x(2);
-    end
-    
-    % Calclate log likelihood for the initial guess for mean and SD (held in
-    % array 'x').
-    [results.fit, results.loglike] = fminsearch(@loglike, x, [], probit);
+    mu = Results.fit(1);
+    sd = Results.fit(2);
 
     % Calculate the errorbars (SEM) for the data:
     for i = 1:size(probit.n, 1)
@@ -68,36 +41,56 @@ function [mu, sd] = psychometric_fit_cum_norm_v2(probit, paradigm)
 
     % Plot the fitted curve:
     stim_set2 = unique(probit.x);
- 
-    mu = results.fit(1); % mean
-    sd = results.fit(2); % sd
+
+    colour_list = ["k", "k", "k","k"]; 
+    m_colour_list = ["#ff7b00", "#ffae00", "#008bb2", "#6aa9bd"]; 
     
     % Plot the observed data points and the fitted curve:
-    
     global stim_set %#ok<*TLEV>
     
     if paradigm == "m133"
         g_stim = linspace(min(stim_set)-(max(stim_set/2)), max(stim_set)+(max(stim_set/2)), 100);
         errorbar(stim_set2, probit.resps ./ probit.n, probit.sem, 'o', ... 
-        'MarkerFaceColor', [0.00,0.45,0.74],"Color", [0.00,0.45,0.74] , ...
+        'MarkerFaceColor', m_colour_list(counter),"Color", m_colour_list(counter) , ...
     'LineWidth', 1, 'HandleVisibility', 'off');
         g_cdf = 0.5 + erf((g_stim - mu)/(sd * sqrt(2)))/2;
-        plot(g_stim, g_cdf, 'k-','LineWidth', 2.5, "Color", [0.00,0.45,0.74]);
+        plot(g_stim, g_cdf, 'k-','LineWidth', 3, "Color",  m_colour_list(counter), "LineStyle","--");
         
     elseif paradigm == "m134"
         g_stim = linspace(min(stim_set)-(max(stim_set/2)), max(stim_set)+(max(stim_set/2)), 100);
         errorbar(stim_set2, probit.resps ./ probit.n, probit.sem, 'o', ...
-        'MarkerFaceColor', [0.84,0.11,0.38],"Color", [0.84,0.11,0.38] , ... 
+        'MarkerFaceColor', m_colour_list(counter),"Color", m_colour_list(counter) , ... 
     'LineWidth', 1, 'HandleVisibility', 'off');
         g_cdf = 0.5 + erf((g_stim - mu)/(sd * sqrt(2)))/2;
-        plot(g_stim, g_cdf, 'k-','LineWidth', 2.5, "Color", [0.84,0.11,0.38]);
+        plot(g_stim, g_cdf, 'k-','LineWidth', 3, "Color", m_colour_list(counter), "LineStyle","--");
         
     else
         stim_set = unique(probit.x);
         g_stim = linspace(min(stim_set)-(max(stim_set/2)), max(stim_set)+(max(stim_set/2)), 100);
-        errorbar(stim_set, probit.resps ./ probit.n, probit.sem, 'ko', ...
-        'MarkerFaceColor', 'k',  'LineWidth', 1, 'HandleVisibility', 'off');
+        errorbar(stim_set, probit.resps ./ probit.n, probit.sem, 'o', ...
+        'MarkerFaceColor', colour_list(counter), "Color", colour_list(counter), 'LineWidth', ...
+        1, 'HandleVisibility', 'off');
         g_cdf = 0.5 + erf((g_stim - mu)/(sd * sqrt(2)))/2;
-        plot(g_stim, g_cdf, 'k-','LineWidth', 2.5);
+        plot(g_stim, g_cdf, 'k-','LineWidth', 2.5, "Color", colour_list(counter));
     end 
+end
+
+function fitParams = fitCumulativeGaussian(resps, n, x)
+
+    % Define the cumulative Gaussian function
+    cumulativeGaussian = @(params, x) 0.5 * (1 + erf((x - params(1)) / (params(2) * sqrt(2))));
+
+    % Initial guess for parameters (mean and standard deviation)
+    initialGuess = [0, abs(x(find((resps./n)>(1-0.76), 1)))];
+
+    % Define options for lsqcurvefit
+    options = optimoptions('lsqcurvefit', 'Display', 'iter');
+
+    % Use lsqcurvefit for least-squares fitting
+    fitParams = lsqcurvefit(cumulativeGaussian, initialGuess, x, resps./n, [], [], options);
+
+    % Display the results
+    disp('Fitted Parameters:');
+    disp(['Mean: ', num2str(fitParams(1))]);
+    disp(['Standard Deviation: ', num2str(fitParams(2))]);
 end
