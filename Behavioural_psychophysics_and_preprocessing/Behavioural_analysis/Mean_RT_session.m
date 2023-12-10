@@ -1,7 +1,7 @@
 function Mean_RT_session(data_raw_rt, name, paradigm)
 
-    % This script measures the mean coherence or disparity with the mean rection
-    % time along the choices of the trials (correct or incorrect)
+    % This script measures the mean coherence or disparity with the mean 
+    % reaction time along the choices of the trials (correct or incorrect)
     % Written by Revan Rangotis, March 2022
 
     %% Pre-processing
@@ -29,7 +29,7 @@ function Mean_RT_session(data_raw_rt, name, paradigm)
 
     %% Focusssed analysis on correct vs incorrect vs 0 trials 
     % First, isolate correct trials
-    hits = data_raw_rt(data_raw_rt(:,5)==1, [2 3]);
+    hits = data_raw_rt(data_raw_rt(:,5) == 1 & data_raw_rt(:,2) ~= 0, [2 3]);
     list_of_trial_conditions_hits = unique(hits(:,1));
 
     % Put the indices of correct trials for each condition (disparity or
@@ -116,6 +116,7 @@ function Mean_RT_session(data_raw_rt, name, paradigm)
         SEM_0 = list_of_trial_conditions_hits_at_zero(:,3);
     end 
 
+
     %% Plotting
     % Plot the graph with the SEM for both conditions 
     errorbar(x_correct,y_correct,SEM_correct,'b-o', 'LineWidth',1);
@@ -139,4 +140,3 @@ function Mean_RT_session(data_raw_rt, name, paradigm)
 
     % Add y-axis label and legend 
     ylabel('Reaction time (s)')
-    legend({'correct', 'incorrect', 'ambiguous'},'Location','northwest')
