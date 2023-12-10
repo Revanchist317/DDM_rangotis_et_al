@@ -13,7 +13,6 @@ tiledlayout("flow")
 
 nexttile
 histogram(rt_cyl_sac)
-% xline(mean(rt_cyl_sac),"-", "mean")
 title("Cylinder/saccades")
 q2 = quantile(rt_cyl_sac, 0.95);
 xlabel("Reaction time [seconds]")
@@ -26,7 +25,6 @@ xlim([0 3])
 
 nexttile
 histogram(rt_dots_sac)
-% xline(mean(rt_dots_sac),"-", "mean")
 title("RDK/saccades")
 q4 = quantile(rt_dots_sac, 0.95);
 xlabel("Reaction time [seconds]")
@@ -39,7 +37,6 @@ xlim([0 3.5])
 
 nexttile
 histogram(rt_cyl_butt)
-% xline(mean(rt_cyl_butt),"-", "mean")
 title("Cylinder/hand")
 q1 = quantile(rt_cyl_butt, 0.95);
 xlabel("Reaction time [seconds]")
@@ -52,7 +49,6 @@ xlim([0 3])
 
 nexttile
 histogram(rt_dots_butt)
-% xline(mean(rt_dots_butt),"-", "mean")
 title("RDK/hand")
 q3 = quantile(rt_dots_butt, 0.95);
 xlabel("Reaction time [seconds]")
