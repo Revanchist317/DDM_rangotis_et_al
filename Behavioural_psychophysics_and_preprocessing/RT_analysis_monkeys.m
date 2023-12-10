@@ -2,14 +2,13 @@
 % Revan Rangotis 2022 
 
 % default folder
-cd('/Users/revanhome/Desktop/HDDM_test_MATLAB/Behavioural_psychophysics_and_preprocessing/')
+cd('/Users/revanhome/Desktop/Magdeburg/DDM/Behavioural_psychophysics_and_preprocessing/Behavioural_data_monkeys')
 
 % Save the figures? 
 Save_figures = 0; 
 
 % This script serves pre-processing for the reaction time (RT) data for the
-% m133 and m134 data for the DDM (Drift Difussion
-% Modelling) project. 
+% m133 (Tornado) and m134 (Turtle) data for the DDM project. 
 
 % Load the data 
 dots_133 = readtable('m133_dots_raw.csv') ;
@@ -17,7 +16,12 @@ dots_134 = readtable('m134_dots_raw.csv') ;
 cyl_133 = readtable('m133_cylinder_raw.csv');
 cyl_134 = readtable('m134_cylinder_raw.csv');
 
-% Cutoff points for outlier removal, in seconds 
+% Cutoff points. For RDK, the decision is easy and mirrors human
+% distribution and the literature. For the clinder, this was far more
+% complicated and will likely be contended but the vast majority of quick
+% reaction times were wild guesses, as one can see from the plot of RT
+% against difficulty. Therefore, I chose the value of 0.19 to reflect what
+% Gold and Shadlen suggested in their annual reviews paper 
 cyl_l_cutoff = 0.19;
 RDK_l_cutoff = 0.25;
 
@@ -41,7 +45,9 @@ xlim([0 0.6])
 xlabel("Reaction time [seconds]")
 ylabel("Count") 
 
-% Upper cut-off, using the 99th percentile 
+
+% Upper cut-off
+% I suggest we go with the 99th percentile 
 cyl_u_cutoff_m133 = (quantile(cyl_133.rt, 0.99));
 xline(cyl_u_cutoff_m133, '-', "Upper cutoff", "FontSize", 16, "LineWidth", 2);
 set(gca, "FontSize", 17)
@@ -85,6 +91,7 @@ set(gca, "FontSize", 17)
 xlim([0 2])
 
 % Upper cut-off
+% I suggest we go with the 98th percentile 
 RDK_u_cutoff_m133 = (quantile(dots_133.rt, 0.98));
 xline(RDK_u_cutoff_m133, '-', "Upper cutoff", "FontSize", 16, "LineWidth", 2);
 
@@ -115,64 +122,8 @@ dots_133(dots_133.rt < RDK_l_cutoff | dots_133.rt > RDK_u_cutoff_m133, :) = [];
 % m134
 dots_134(dots_134.rt < RDK_l_cutoff | dots_134.rt > RDK_u_cutoff_m134, :) = [];
 
-%% Psychometric and chronometric evaluations
-
-% Chronometric function cylinder
-paradigm = "cyl_sac"; 
-
-% The accuracy column needs to have a proper name 
-cyl_133 = renamevars(cyl_133, "acc", "accuracy");
-cyl_134 = renamevars(cyl_134, "acc", "accuracy");
-
-data_raw_cyl_m133 = table2array(cyl_133);
-name_133 = "m133";
-data_raw_cyl_m134 = table2array(cyl_134);
-name_134 = "m134";
-
-m133_cylinder_psychometric_figure = figure;
-Mean_RT_session(data_raw_cyl_m133, name_133, paradigm);
-m134_cylinder_psychometric_figure = figure;
-Mean_RT_session(data_raw_cyl_m134, name_134, paradigm);
-
-% Chronometric function RDK
-paradigm = "dots_butt"; % RDK / buttons (hand response), although the 
-% monkeys did not respond with buttons but rather with a touchscreen
-
-dots_133 = movevars(dots_133, 2, 'After', 3);
-dots_133 = movevars(dots_133, 4, 'Before', 2);
-dots_133.stim = dots_133.stim(:) * 50;
-
-dots_134 = movevars(dots_134, 2, 'After', 3);
-dots_134 = movevars(dots_134, 4, 'Before', 2);
-dots_134.stim = dots_134.stim(:) * 50;
-
-data_raw_dots_m133 = table2array(dots_133);
-data_raw_dots_m134 = table2array(dots_134);
-
-figure
-Mean_RT_session(data_raw_dots_m133, name_133, paradigm);
-
-figure
-Mean_RT_session(data_raw_dots_m134, name_134, paradigm);
-set(gca, "FontSize", 17)
-
 % Save the newly made files 
 writetable(dots_133, 'm133_dots_pp.csv')
 writetable(dots_134, 'm134_dots_pp.csv')
 writetable(cyl_133, 'm133_cyl_pp.csv')
 writetable(cyl_134, 'm134_cyl_pp.csv')
-
-if Save_figures
-
-    if ~isfolder('figures') 
-        mkdir figures
-    end 
-
-    cd figures % move to folder
-    
-    % Save the histograms 
-    saveas(m133_cylinder_h_figure, 'm133_cylinder_h_figure.fig')
-    saveas(m134_cylinder_h_figure, 'm134_cylinder_h_figure.fig')
-    saveas(m133_dots_h_figure, 'm133_dots_h_figure.fig')
-    saveas(m134_dots_h_figure, 'm134_dots_h_figure.fig')
-end 
