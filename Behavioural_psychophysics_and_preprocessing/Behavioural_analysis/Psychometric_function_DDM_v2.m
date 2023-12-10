@@ -1,4 +1,4 @@
-function [mu, sd] = Psychometric_function_DDM_v2(data_raw_psychometric, paradigm)
+function [mu, sd] = Psychometric_function_DDM_v2(data_raw_psychometric, paradigm, counter)
 
     %% Pre-processing
 
@@ -32,7 +32,7 @@ function [mu, sd] = Psychometric_function_DDM_v2(data_raw_psychometric, paradigm
     probit.n = list_of_conditions(:,2); % Number of trials in total
     probit.resps = list_of_conditions(:,3); % Number of 'right direction' trials
 
-    [mu, sd] = psychometric_fit_cum_norm_v2(probit, paradigm);
+    [mu, sd] = psychometric_fit_cum_norm_v2(probit, paradigm, counter);
     
     if max(probit.x) > 10
         precision = 3;
@@ -47,10 +47,13 @@ function [mu, sd] = Psychometric_function_DDM_v2(data_raw_psychometric, paradigm
     xl = xlim;
     left_post_text = xl(1) + abs(xl(1))*0.1;
 
+    colour_list = ["#FF8C00", "#00b25f", "#c4290a", "#0072B2"]; 
+    m_colour_list = ["#ff7b00", "#ffae00", "#008bb2", "#6aa9bd"]; 
+
     if paradigm == "humans"
-        text(left_post_text, 0.8, str, "FontSize", 16); 
+        text(left_post_text, 0.8, str, "FontSize", 16, "Color", 'k'); 
     elseif paradigm == "m133"
-        text(left_post_text, 0.6, str, "FontSize", 16, "Color", [0.00,0.45,0.74]);
+        text(left_post_text, 0.6, str, "FontSize", 16, "Color", m_colour_list(counter));
     else
-        text(left_post_text, 0.4, str, "FontSize", 16, "Color", [0.84,0.11,0.38]);
+        text(left_post_text, 0.4, str, "FontSize", 16, "Color", m_colour_list(counter));
     end 
